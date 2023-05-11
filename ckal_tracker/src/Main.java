@@ -5,7 +5,6 @@ import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
-
         Scanner scanner = new Scanner(System.in);
         StepTracker tracker = new StepTracker();
         int userInput = -1;
@@ -20,10 +19,11 @@ public class Main {
                     continue;
                 }
                 if(userInput == 3){
-                    System.out.println("Set new step goal number");
-                    input = scanner.next();
-                    result = tryParseInt(input);
-                    //tracker.changeStepGoal(input);
+                    getStepGoal(scanner, tracker);
+                } else if (userInput == 1) {
+                    getSteps(scanner, tracker);
+                } else if (userInput == 2) {
+                    getStatistics(scanner, tracker);
                 }
             }
             else{
@@ -33,7 +33,6 @@ public class Main {
         while(userInput != 0);
         System.out.println("Program finished");
     }
-
     private static void printMenu(){
         System.out.println("This is calorie tracker! Choose actions from those options:");
         System.out.println("1 — Input steps for specific day");
@@ -48,5 +47,59 @@ public class Main {
         } catch (NumberFormatException e) {
         }
         return intInput;
+    }
+    private static void getStepGoal(Scanner scanner, StepTracker tracker){
+        int steps = setSteps(scanner, "Set new step goal number");
+        String result = tracker.changeStepGoal(steps);
+        System.out.println(result);
+    }
+    private static void getSteps(Scanner scanner, StepTracker tracker){
+        int month = chooseMonth(scanner, tracker.months);
+        int day = chooseDay(scanner);
+        int steps = setSteps(scanner, "Set steps number");
+        String result = tracker.inputStepsForDay(month, day, steps);
+        System.out.println(result);
+    }
+    private static void getStatistics(Scanner scanner, StepTracker tracker){
+        int month = chooseMonth(scanner, tracker.months);
+        tracker.printStatistics(month);
+    }
+    private static int chooseMonth(Scanner scanner, String[] months){
+        OptionalInt result = OptionalInt.empty();
+        while(result.isEmpty()) {
+            System.out.println("Choose month: ");
+            for (int i = 0; i < months.length; i++) {
+                System.out.printf("%d — %s %n", i + 1, months[i]);
+            }
+            String input = scanner.next();
+            result = tryParseInt(input);
+            if (result.isPresent() && (result.getAsInt() < 1 || result.getAsInt() > 12)) {
+                System.out.println("Wrong month. Try again, please");
+                result = OptionalInt.empty();
+            }
+        }
+        return result.getAsInt() - 1;
+    }
+    private static int chooseDay(Scanner scanner){
+        OptionalInt result = OptionalInt.empty();
+        while(result.isEmpty()) {
+            System.out.println("Choose day from 1 to 30: ");
+            String input = scanner.next();
+            result = tryParseInt(input);
+            if (result.isPresent() && (result.getAsInt() < 1 || result.getAsInt() > 30)) {
+                System.out.println("Wrong day. Try again, please");
+                result = OptionalInt.empty();
+            }
+        }
+        return result.getAsInt() - 1;
+    }
+    private static int setSteps(Scanner scanner, String message){
+        OptionalInt result = OptionalInt.empty();
+        while(result.isEmpty()){
+            System.out.println(message);
+            String input = scanner.next();
+            result = tryParseInt(input);
+        }
+        return result.getAsInt();
     }
 }
