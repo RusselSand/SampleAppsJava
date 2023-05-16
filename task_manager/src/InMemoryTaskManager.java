@@ -2,53 +2,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.stream.Collectors;
 
-public class Manager {
-    public static int counter;
+public class InMemoryTaskManager implements TaskManager {
+    public int counter;
     public static HashMap<Integer, Task> tasks = new HashMap<>();
     public static HashMap<Integer, SubTask> subTasks = new HashMap<>();
     public static HashMap<Integer, EpicTask> epicTasks = new HashMap<>();
+    public static ArrayList<Integer> historyOfViews = new ArrayList<>();
 
-    public static void main(String[] args) {
-        Task task1 = new Task("Убрать террасу", "Помой все полы и подмети листья", counter, 0);
-        counter++;
-        Task task2 = new Task("Развесить белье", "Сними высохшее и развесь новое", counter, 0);
-        counter++;
-        create(task1);
-        create(task2);
-        EpicTask epic1 = new EpicTask("Убрать кухню", "Кухня должна блестеть", counter, 0);
-        counter++;
-        EpicTask epic2 = new EpicTask("Убрать ванную", "Ванная должна блестеть", counter, 0);
-        counter++;
-        create(epic1);
-        create(epic2);
-        SubTask subTask1 = new SubTask("Помыть посуду", "Загрузить всё в посудомойку", counter, 0,
-                epic1.getId());
-        counter++;
-        SubTask subTask2 = new SubTask("Помыть полы", "Протереть зону до стола", counter, 0,
-                epic1.getId());
-        counter++;
-        SubTask subTask3 = new SubTask("Помыть унитаз", "Вычистить вилкой", counter, 0,
-                epic2.getId());
-        counter++;
-        create(subTask1);
-        create(subTask2);
-        create(subTask3);
-        printAllTasks();
-        task2.setState(2);
-        update(task2, task2.getId());
-        subTask2.setState(2);
-        subTask3.setState(2);
-        update(subTask2, subTask2.getId());
-        update(subTask3, subTask3.getId());
-        printAllTasks();
-        delete("Task", task1.getId());
-        delete("EpicTask", epic2.getId());
-        printAllTasks();
-        deleteAllTasks("Task");
-        printAllTasks();
-    }
-
-    public static ArrayList<Task> getAllTasks(String className){
+    @Override
+    public ArrayList<Task> getAllTasks(String className){
         switch (className) {
             case "EpicTask" -> {
                 return new ArrayList<>(epicTasks.values());
@@ -62,28 +24,34 @@ public class Manager {
         }
         return new ArrayList<>();
     }
-    public static void deleteAllTasks(String className){
+    @Override
+    public void deleteAllTasks(String className){
         switch (className) {
             case "EpicTask" -> epicTasks.clear();
             case "Task" -> tasks.clear();
             case "SubTask" -> subTasks.clear();
         }
     }
-    public static Task getById(String className, int id){
-        switch (className) {
-            case "EpicTask" -> {
-                return epicTasks.get(id);
-            }
-            case "Task" -> {
-                return tasks.get(id);
-            }
-            case "SubTask" -> {
-                return subTasks.get(id);
-            }
+    @Override
+    public Task getById(String className, int id){
+        Task task = null;
+        if(epicTasks.containsKey(id)){
+            task = epicTasks.get(id);
+        } else if (tasks.containsKey(id)) {
+            task = tasks.get(id);
+        }else if(subTasks.containsKey(id)){
+            task = subTasks.get(id);
         }
-        return null;
+        if(historyOfViews.size() == 10){
+            historyOfViews.remove(0);
+        }
+        historyOfViews.add(id);
+        return task;
     }
-    public static void create(Task task){
+    @Override
+    public Task create(Task task){
+        task.setId(counter);
+        counter++;
         switch (task.getClass().getName()) {
             case "EpicTask" -> {
                 epicTasks.put(task.getId(), (EpicTask) task);
@@ -99,8 +67,10 @@ public class Manager {
                 checkEpicState(((SubTask) task).getEpicId());
             }
         }
+        return task;
     }
-    public static void update(Task task, int id){
+    @Override
+    public void update(Task task, int id){
         switch (task.getClass().getName()) {
             case "EpicTask" -> {
                 epicTasks.put(id, (EpicTask) task);
@@ -117,7 +87,8 @@ public class Manager {
             }
         }
     }
-    public static void delete(String className, int id){
+    @Override
+    public void delete(String className, int id){
         switch (className) {
             case "EpicTask" -> {
                 epicTasks.remove(id);
@@ -141,32 +112,16 @@ public class Manager {
             }
         }
     }
-    public static ArrayList<SubTask> getAllSubTasks(int epicId){
+    @Override
+    public ArrayList<SubTask> getAllSubTasks(int epicId){
         return subTasks.values().stream().filter(subtask ->
                 epicId == subtask.getEpicId()).collect(Collectors.toCollection(ArrayList::new));
     }
-    public static void checkEpicState(int id){
-        EpicTask epic = (EpicTask) getById("EpicTask", id);
-        if(epic == null){
-            return;
-        }
-        int epicState = epic.getState();
-        ArrayList<Integer> subtasks = getAllSubTasks(id).stream().map(Task::getState)
-                .collect(Collectors.toCollection(ArrayList::new));
-        int subTasksSum = subtasks.stream().mapToInt(Integer::intValue).sum();
-        if(subTasksSum == 0 ){
-            epicState = 0;
-        } else if (subTasksSum == subtasks.size() * 2) {
-            epicState = 2;
-        } else{
-            epicState = 1;
-        }
-        epic.setState(epicState);
-        update(epic, id);
-    }
-    public static void printAllTasks(){
+    @Override
+    public void printAllTasks(){
         ArrayList<Task> tasks = getAllTasks("Task");
         ArrayList<Task> epics = getAllTasks("EpicTask");
+        System.out.println("_______");
         for (Task task : tasks) {
             System.out.println(task);
         }
@@ -178,4 +133,38 @@ public class Manager {
             }
         }
     }
+    @Override
+    public ArrayList<Task> history(){
+        ArrayList<Task> history = new ArrayList<>();
+        for (Integer id: historyOfViews) {
+            if(epicTasks.containsKey(id)){
+                history.add(epicTasks.get(id));
+            } else if (tasks.containsKey(id)) {
+                history.add(tasks.get(id));
+            } else if(subTasks.containsKey(id)){
+                history.add(subTasks.get(id));
+            }
+        }
+        return history;
+    }
+    public void checkEpicState(int id){
+        EpicTask epic = (EpicTask) getById("EpicTask", id);
+        if(epic == null){
+            return;
+        }
+        int epicState = epic.getState().ordinal();
+        ArrayList<Task.Status> subtasks = getAllSubTasks(id).stream().map(Task::getState)
+                .collect(Collectors.toCollection(ArrayList::new));
+        int subTasksSum = subtasks.stream().mapToInt(Enum::ordinal).sum();
+        if(subTasksSum == 0 ){
+            epicState = 0;
+        } else if (subTasksSum == subtasks.size() * 2) {
+            epicState = 2;
+        } else{
+            epicState = 1;
+        }
+        epic.setState(Task.Status.values()[epicState]);
+        update(epic, id);
+    }
+
 }

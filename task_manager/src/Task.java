@@ -1,14 +1,18 @@
 public class Task {
     private String name;
     private String description;
-    private final int id;
-    private int state;
-    public static final String[] STATUS = {"NEW", "IN_PROGRESS", "DONE"};
+    private int id;
+    private Status state;
+    //public static final String[] STATUS = {"NEW", "IN_PROGRESS", "DONE"};
+    public enum Status {
+        NEW,
+        IN_PROGRESS,
+        DONE
+    }
 
-    public Task(String name, String description, int id, int state) {
+    public Task(String name, String description, Status state) {
         this.name = name;
         this.description = description;
-        this.id = id;
         this.state = state;
     }
 
@@ -32,16 +36,21 @@ public class Task {
         return id;
     }
 
-    public int getState() {
+    public void setId(int id) {
+        this.id = id;
+    }
+
+
+    public Status getState() {
         return state;
     }
 
-    public void setState(int state) {
+    public void setState(Status state) {
         this.state = state;
     }
 
     @Override
     public String toString(){
-        return id + ": " + name + " — " + STATUS[state];
+        return id + ": " + name + " — " + state.name();
     }
 }
