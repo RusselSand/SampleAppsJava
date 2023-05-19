@@ -10,4 +10,5 @@ public interface TaskManager extends HistoryManager{
     List<SubTask> getAllSubTasks(int epicId);
     void printAllTasks();
     void showHistory();
+    void getPrioritizedTasks();
 }
